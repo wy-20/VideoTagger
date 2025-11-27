@@ -6,36 +6,31 @@ This bundles Python, PyQt6, and all dependencies into a single executable.
 
 import sys
 from pathlib import Path
+from PyInstaller.utils.hooks import collect_submodules
 
 # Get the project root directory
 project_root = Path(SPECPATH).parent.parent
 
+# Add project root to sys.path so PyInstaller can find the src package
+sys.path.insert(0, str(project_root))
+
 block_cipher = None
+
+# Collect all submodules from the src package
+src_hiddenimports = collect_submodules('src')
+
+# Collect PyQt6 submodules
+pyqt6_hiddenimports = collect_submodules('PyQt6')
 
 a = Analysis(
     [str(project_root / 'main.py')],
     pathex=[str(project_root)],
     binaries=[],
-    datas=[
-        # Include source files as data
-        (str(project_root / 'src'), 'src'),
-    ],
+    datas=[],
     hiddenimports=[
-        'PyQt6',
-        'PyQt6.QtCore',
-        'PyQt6.QtGui',
-        'PyQt6.QtWidgets',
-        'PyQt6.QtMultimedia',
-        'PyQt6.QtMultimediaWidgets',
+        *pyqt6_hiddenimports,
+        *src_hiddenimports,
         'PyQt6.sip',
-        # Core modules
-        'src.ui.main_window',
-        'src.ui.player',
-        'src.ui.settings_dialog',
-        'src.core.video_scanner',
-        'src.core.tag_manager',
-        'src.core.shortcut_manager',
-        'src.utils.file_utils',
     ],
     hookspath=[],
     hooksconfig={},
