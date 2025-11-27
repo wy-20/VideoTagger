@@ -41,6 +41,11 @@ env/
 config/shortcuts.json
 data/tags.json
 
+# Nuitka build artifacts
+*.build/
+*.dist/
+*.onefile-build/
+
 # OS
 .DS_Store
 Thumbs.db
