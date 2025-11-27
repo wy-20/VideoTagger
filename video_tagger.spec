@@ -7,7 +7,7 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 block_cipher = None
 
 # Get the project root directory
-project_root = os.path.abspath(os.path.dirname(__file__) or '.')
+project_root = os.path.abspath(os.path.dirname(__file__))
 
 # Collect PyQt6 related data files (resources only, no Python files)
 datas = collect_data_files('PyQt6')
