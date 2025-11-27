@@ -40,12 +40,30 @@ class VideoPlayerWidget(QWidget):
             return
         
         try:
-            # Create VLC instance with options for better compatibility
-            # Note: Don't use --no-xlib on Linux as we need X11 for embedding video
+            # VLC initialization options for better codec and playback support
+            vlc_args = [
+                '--quiet',           # Suppress VLC output
+                '--no-video-title-show',  # Don't show title on video
+            ]
+            
+            # On Linux, ensure VLC can find plugins and use proper video output
             if sys.platform.startswith('linux'):
-                self.vlc_instance = vlc.Instance('--quiet')
-            else:
-                self.vlc_instance = vlc.Instance('--quiet')
+                import os
+                # Common VLC plugin paths on Linux
+                plugin_paths = [
+                    '/usr/lib/x86_64-linux-gnu/vlc/plugins',
+                    '/usr/lib/vlc/plugins',
+                    '/usr/lib64/vlc/plugins',
+                ]
+                for path in plugin_paths:
+                    if os.path.exists(path):
+                        vlc_args.append(f'--plugin-path={path}')
+                        break
+                
+                # Use X11 video output explicitly
+                vlc_args.append('--vout=xcb_x11')
+            
+            self.vlc_instance = vlc.Instance(' '.join(vlc_args))
             self.media_player = self.vlc_instance.media_player_new()
         except Exception as e:
             print(f"VLC initialization error: {e}")

@@ -28,16 +28,23 @@
 
 ### 安装 VLC
 
+确保安装完整的 VLC 包以获得所有视频编解码器支持：
+
 ```bash
 # Ubuntu/Debian
-sudo apt install vlc libvlc-dev
+sudo apt install vlc libvlc-dev vlc-plugin-base vlc-plugin-video-output
+
+# 如果遇到编解码器问题，还需安装：
+sudo apt install ubuntu-restricted-extras libavcodec-extra
 
 # Fedora
-sudo dnf install vlc vlc-devel
+sudo dnf install vlc vlc-devel vlc-plugins-freeworld
 
 # Arch Linux
 sudo pacman -S vlc
 ```
+
+> **注意**: 如果视频无法播放并提示编解码器不支持，请确保系统已安装完整的 VLC（不仅是 libvlc），并安装多媒体编解码器包。
 
 ### 安装 Python 依赖
 
