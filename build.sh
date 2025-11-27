@@ -27,13 +27,9 @@ pip install --upgrade pyinstaller
 echo "🧹 Cleaning old builds..."
 rm -rf build/ dist/ 2>/dev/null || true
 
-# Execute packaging
+# Execute packaging using spec file
 echo "🔨 Starting packaging..."
-pyinstaller --onefile --windowed \
-    --name "$APP_NAME" \
-    --hidden-import PyQt6.QtMultimedia \
-    --hidden-import PyQt6.QtMultimediaWidgets \
-    main.py
+pyinstaller video_tagger.spec --clean
 
 # Create release package
 echo "📁 Creating release package..."
@@ -43,11 +39,10 @@ mkdir -p "$RELEASE_DIR"
 # Copy executable
 cp "$OUTPUT_DIR/$APP_NAME" "$RELEASE_DIR/"
 
-# Create launcher script (handles library paths)
+# Create launcher script
 cat > "$RELEASE_DIR/run.sh" << 'EOF'
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-export LD_LIBRARY_PATH="$SCRIPT_DIR/lib:$LD_LIBRARY_PATH"
 exec "$SCRIPT_DIR/video-tagger" "$@"
 EOF
 chmod +x "$RELEASE_DIR/run.sh"

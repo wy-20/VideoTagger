@@ -5,15 +5,11 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 block_cipher = None
 
-# Collect PyQt6 related data files
-datas = collect_data_files('PyQt6', include_py_files=True)
+# Collect PyQt6 related data files (resources only, no Python files)
+datas = collect_data_files('PyQt6')
 
-# Collect all PyQt6 submodules
+# Collect all PyQt6 submodules (includes QtMultimedia, QtMultimediaWidgets)
 hiddenimports = collect_submodules('PyQt6')
-hiddenimports += [
-    'PyQt6.QtMultimedia',
-    'PyQt6.QtMultimediaWidgets',
-]
 
 a = Analysis(
     ['main.py'],
