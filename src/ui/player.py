@@ -161,7 +161,7 @@ class QtPlayer:
         Set the frame rate for frame-by-frame navigation.
         
         Args:
-            rate: Frame rate in frames per second
+            rate: Frame rate in frames per second (valid range: 1-120)
         """
-        if rate > 0:
+        if 1 <= rate <= 120:
             self._frame_rate = rate

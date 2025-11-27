@@ -446,40 +446,35 @@ class MainWindow(QMainWindow):
         if self.player:
             self.player.set_frame_rate(float(value))
     
+    def _get_current_video_index(self) -> int:
+        """Get the current video index in the playlist."""
+        if self.current_video:
+            try:
+                return self.videos.index(self.current_video)
+            except ValueError:
+                pass
+        return -1
+    
+    def _navigate_to_video(self, index: int):
+        """Navigate to a video at the specified index in the playlist."""
+        if 0 <= index < len(self.videos):
+            self.playlist.setCurrentRow(index)
+            item = self.playlist.item(index)
+            if item:
+                self.play_video(item)
+    
     def play_previous_video(self):
         """Play the previous video in the playlist."""
         if not self.videos:
             return
-        
-        current_row = -1
-        if self.current_video:
-            try:
-                current_row = self.videos.index(self.current_video)
-            except ValueError:
-                pass
-        
+        current_row = self._get_current_video_index()
         if current_row > 0:
-            new_row = current_row - 1
-            self.playlist.setCurrentRow(new_row)
-            item = self.playlist.item(new_row)
-            if item:
-                self.play_video(item)
+            self._navigate_to_video(current_row - 1)
     
     def play_next_video(self):
         """Play the next video in the playlist."""
         if not self.videos:
             return
-        
-        current_row = -1
-        if self.current_video:
-            try:
-                current_row = self.videos.index(self.current_video)
-            except ValueError:
-                pass
-        
+        current_row = self._get_current_video_index()
         if current_row < len(self.videos) - 1:
-            new_row = current_row + 1
-            self.playlist.setCurrentRow(new_row)
-            item = self.playlist.item(new_row)
-            if item:
-                self.play_video(item)
+            self._navigate_to_video(current_row + 1)
