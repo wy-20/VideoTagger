@@ -8,7 +8,11 @@ A lightweight video tagging tool built with PyQt6 and QtMultimedia for Linux, su
 - **Video Scanning**: Recursively scan directories for video files (mp4, avi, mkv, mov, webm, flv, wmv)
 - **Playlist View**: Display all videos in a list with file names and assigned tags
 - **Video Playback**: Built-in player with play/pause, progress bar, and volume control
-- **Tag Management**: Add tags to videos via keyboard shortcuts or button clicks
+- **Playback Speed Control**: Adjust playback speed from 0.25x to 2.0x with keyboard shortcuts or dropdown
+- **Frame-by-Frame Navigation**: Step through video one frame at a time with keyboard shortcuts or buttons
+- **Tag Management**: Toggle tags on/off with keyboard shortcuts or button clicks
+- **Tag Toggle Mode**: First press adds tag, second press removes it - buttons show active state
+- **Clear All Tags**: One-click button to remove all tags from current video (with confirmation)
 - **Customizable Shortcuts**: Configure keyboard shortcuts for quick tagging
 - **JSON Export**: Export all tags in JSON format: `{video_path: [tag1, tag2, ...], ...}`
 - **Persistent Storage**: Automatically save and restore tags between sessions
@@ -70,14 +74,26 @@ python main.py
 
 ### Default Keyboard Shortcuts
 
-| Key | Tag |
-|-----|-----|
-| 1 | good |
-| 2 | bad |
-| 3 | interesting |
-| 4 | review_later |
-| 5 | favorite |
+| Key | Function |
+|-----|----------|
+| 1 | Toggle 'good' tag |
+| 2 | Toggle 'bad' tag |
+| 3 | Toggle 'interesting' tag |
+| 4 | Toggle 'review_later' tag |
+| 5 | Toggle 'favorite' tag |
 | Space | Play/Pause |
+| , (comma) | Previous frame |
+| . (period) | Next frame |
+| + or = | Increase playback speed |
+| - | Decrease playback speed |
+| Ctrl+Shift+C | Clear all tags |
+
+### Playback Controls
+
+- **Frame-by-frame navigation**: Use `,` and `.` keys or the ⏮️/⏭️ buttons to step through video one frame at a time
+- **Playback speed**: Adjust speed from 0.25x to 2.0x using the dropdown or +/- keys
+- **Tag toggle**: Press a tag shortcut to add the tag, press again to remove it
+- **Clear all tags**: Remove all tags from current video with confirmation
 
 ## Project Structure
 

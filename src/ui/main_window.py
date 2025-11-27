@@ -3,13 +3,13 @@ from pathlib import Path
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QListWidget, QPushButton, QFileDialog, QLabel,
-    QSlider, QListWidgetItem, QSplitter
+    QSlider, QListWidgetItem, QSplitter, QComboBox, QMessageBox
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QShortcut, QKeySequence
 from PyQt6.QtMultimediaWidgets import QVideoWidget
 
-from src.ui.player import QtPlayer
+from src.ui.player import QtPlayer, PLAYBACK_SPEEDS
 from src.ui.settings_dialog import SettingsDialog
 from src.core.video_scanner import scan_videos
 from src.core.tag_manager import TagManager
@@ -70,8 +70,19 @@ class MainWindow(QMainWindow):
         # Playback controls
         controls = QHBoxLayout()
         
+        # Frame step buttons
+        self.prev_frame_btn = QPushButton("⏮️")
+        self.prev_frame_btn.setToolTip("上一帧 (,)")
+        self.prev_frame_btn.setFixedWidth(40)
+        self.prev_frame_btn.clicked.connect(self.step_backward)
+        
         self.play_btn = QPushButton("▶️ 播放")
         self.play_btn.clicked.connect(self.toggle_play)
+        
+        self.next_frame_btn = QPushButton("⏭️")
+        self.next_frame_btn.setToolTip("下一帧 (.)")
+        self.next_frame_btn.setFixedWidth(40)
+        self.next_frame_btn.clicked.connect(self.step_forward)
         
         self.progress = QSlider(Qt.Orientation.Horizontal)
         self.progress.setMaximum(1000)
@@ -79,15 +90,27 @@ class MainWindow(QMainWindow):
         
         self.time_label = QLabel("00:00 / 00:00")
         
+        # Speed control
+        self.speed_combo = QComboBox()
+        for speed in PLAYBACK_SPEEDS:
+            self.speed_combo.addItem(f"{speed}x", speed)
+        self.speed_combo.setCurrentIndex(PLAYBACK_SPEEDS.index(1.0))
+        self.speed_combo.currentIndexChanged.connect(self.change_speed)
+        self.speed_combo.setFixedWidth(70)
+        self.speed_combo.setToolTip("播放速度 (+/-)")
+        
         self.volume = QSlider(Qt.Orientation.Horizontal)
         self.volume.setMaximum(100)
         self.volume.setValue(100)
         self.volume.setFixedWidth(100)
         self.volume.valueChanged.connect(self.change_volume)
         
+        controls.addWidget(self.prev_frame_btn)
         controls.addWidget(self.play_btn)
+        controls.addWidget(self.next_frame_btn)
         controls.addWidget(self.progress, 1)
         controls.addWidget(self.time_label)
+        controls.addWidget(self.speed_combo)
         controls.addWidget(QLabel("🔊"))
         controls.addWidget(self.volume)
         
@@ -102,6 +125,12 @@ class MainWindow(QMainWindow):
         self.tag_label = QLabel("无")
         self.tag_label.setWordWrap(True)
         right_panel.addWidget(self.tag_label)
+        
+        # Clear all tags button
+        self.clear_tags_btn = QPushButton("🗑️ 清除所有标签")
+        self.clear_tags_btn.setToolTip("清除当前视频所有标签 (Ctrl+Shift+C)")
+        self.clear_tags_btn.clicked.connect(self.clear_all_tags)
+        right_panel.addWidget(self.clear_tags_btn)
         
         right_panel.addWidget(QLabel("<b>快捷键标签</b>"))
         self.tag_buttons_layout = QVBoxLayout()
@@ -138,11 +167,11 @@ class MainWindow(QMainWindow):
             shortcut.deleteLater()
         self.shortcuts.clear()
         
-        # Add tag shortcuts
+        # Add tag shortcuts (toggle mode)
         for key, tag in self.shortcut_manager.get_all().items():
             shortcut = QShortcut(QKeySequence(key), self)
             shortcut.activated.connect(
-                lambda t=tag: self.add_tag_to_current(t)
+                lambda t=tag: self.toggle_tag_on_current(t)
             )
             self.shortcuts.append(shortcut)
         
@@ -150,6 +179,33 @@ class MainWindow(QMainWindow):
         space_shortcut = QShortcut(QKeySequence("Space"), self)
         space_shortcut.activated.connect(self.toggle_play)
         self.shortcuts.append(space_shortcut)
+        
+        # Frame-by-frame shortcuts
+        prev_frame_shortcut = QShortcut(QKeySequence(","), self)
+        prev_frame_shortcut.activated.connect(self.step_backward)
+        self.shortcuts.append(prev_frame_shortcut)
+        
+        next_frame_shortcut = QShortcut(QKeySequence("."), self)
+        next_frame_shortcut.activated.connect(self.step_forward)
+        self.shortcuts.append(next_frame_shortcut)
+        
+        # Speed control shortcuts
+        speed_up_shortcut = QShortcut(QKeySequence("+"), self)
+        speed_up_shortcut.activated.connect(self.increase_speed)
+        self.shortcuts.append(speed_up_shortcut)
+        
+        speed_up_equals = QShortcut(QKeySequence("="), self)
+        speed_up_equals.activated.connect(self.increase_speed)
+        self.shortcuts.append(speed_up_equals)
+        
+        speed_down_shortcut = QShortcut(QKeySequence("-"), self)
+        speed_down_shortcut.activated.connect(self.decrease_speed)
+        self.shortcuts.append(speed_down_shortcut)
+        
+        # Clear all tags shortcut
+        clear_tags_shortcut = QShortcut(QKeySequence("Ctrl+Shift+C"), self)
+        clear_tags_shortcut.activated.connect(self.clear_all_tags)
+        self.shortcuts.append(clear_tags_shortcut)
     
     def setup_timer(self):
         """Set up timer for progress updates."""
@@ -165,11 +221,31 @@ class MainWindow(QMainWindow):
             if item.widget():
                 item.widget().deleteLater()
         
+        # Store button references for state updates
+        self.tag_buttons = {}
+        
         # Add new buttons
         for key, tag in self.shortcut_manager.get_all().items():
             btn = QPushButton(f"[{key}] {tag}")
-            btn.clicked.connect(lambda checked, t=tag: self.add_tag_to_current(t))
+            btn.setCheckable(True)
+            btn.clicked.connect(lambda checked, t=tag: self.toggle_tag_on_current(t))
             self.tag_buttons_layout.addWidget(btn)
+            self.tag_buttons[tag] = btn
+        
+        # Update button states based on current video
+        self.update_tag_button_states()
+    
+    def update_tag_button_states(self):
+        """Update tag button checked states based on current video tags."""
+        if not hasattr(self, 'tag_buttons'):
+            return
+        
+        current_tags = []
+        if self.current_video:
+            current_tags = self.tag_manager.get_tags(self.current_video)
+        
+        for tag, btn in self.tag_buttons.items():
+            btn.setChecked(tag in current_tags)
     
     def select_folder(self):
         """Open folder selection dialog."""
@@ -197,6 +273,7 @@ class MainWindow(QMainWindow):
             self.player.play(video_path)
             self.play_btn.setText("⏸️ 暂停")
         self.update_current_tags()
+        self.update_tag_button_states()
     
     def toggle_play(self):
         """Toggle play/pause state."""
@@ -244,6 +321,80 @@ class MainWindow(QMainWindow):
             self.tag_manager.add_tag(self.current_video, tag)
             self.update_current_tags()
             self.update_playlist()
+            self.update_tag_button_states()
+    
+    def toggle_tag_on_current(self, tag: str):
+        """Toggle a tag on the current video (add if not present, remove if present)."""
+        if self.current_video:
+            self.tag_manager.toggle_tag(self.current_video, tag)
+            self.update_current_tags()
+            self.update_playlist()
+            self.update_tag_button_states()
+    
+    def clear_all_tags(self):
+        """Clear all tags from the current video."""
+        if not self.current_video:
+            return
+        
+        current_tags = self.tag_manager.get_tags(self.current_video)
+        if not current_tags:
+            return
+        
+        reply = QMessageBox.question(
+            self, "确认清除",
+            "确定要清除当前视频的所有标签吗？",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            self.tag_manager.clear_tags(self.current_video)
+            self.update_current_tags()
+            self.update_playlist()
+            self.update_tag_button_states()
+    
+    def step_forward(self):
+        """Step video forward by one frame."""
+        if self.player:
+            self.player.step_forward()
+            if self.player.is_paused:
+                self.play_btn.setText("▶️ 播放")
+    
+    def step_backward(self):
+        """Step video backward by one frame."""
+        if self.player:
+            self.player.step_backward()
+            if self.player.is_paused:
+                self.play_btn.setText("▶️ 播放")
+    
+    def change_speed(self, index):
+        """Change playback speed from combo box."""
+        if self.player and index >= 0:
+            speed = self.speed_combo.itemData(index)
+            self.player.set_playback_rate(speed)
+    
+    def increase_speed(self):
+        """Increase playback speed."""
+        if self.player:
+            self.player.increase_speed()
+            self._update_speed_combo()
+    
+    def decrease_speed(self):
+        """Decrease playback speed."""
+        if self.player:
+            self.player.decrease_speed()
+            self._update_speed_combo()
+    
+    def _update_speed_combo(self):
+        """Update speed combo box to reflect current playback rate."""
+        if self.player:
+            current_rate = self.player.playback_rate
+            for i in range(self.speed_combo.count()):
+                if self.speed_combo.itemData(i) == current_rate:
+                    self.speed_combo.blockSignals(True)
+                    self.speed_combo.setCurrentIndex(i)
+                    self.speed_combo.blockSignals(False)
+                    break
     
     def update_current_tags(self):
         """Update the current video's tag display."""
