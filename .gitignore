@@ -41,6 +41,11 @@ env/
 config/shortcuts.json
 data/tags.json
 
+# PyInstaller
+*.spec.backup
+AppDir/
+*.AppImage
+
 # OS
 .DS_Store
 Thumbs.db
