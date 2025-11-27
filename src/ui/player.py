@@ -41,7 +41,11 @@ class VideoPlayerWidget(QWidget):
         
         try:
             # Create VLC instance with options for better compatibility
-            self.vlc_instance = vlc.Instance('--no-xlib', '--quiet')
+            # Note: Don't use --no-xlib on Linux as we need X11 for embedding video
+            if sys.platform.startswith('linux'):
+                self.vlc_instance = vlc.Instance('--quiet')
+            else:
+                self.vlc_instance = vlc.Instance('--quiet')
             self.media_player = self.vlc_instance.media_player_new()
         except Exception as e:
             print(f"VLC initialization error: {e}")
@@ -133,24 +137,31 @@ class VideoPlayerWidget(QWidget):
         self.current_video = video_path
         
         try:
+            # Stop any current playback first
+            self.media_player.stop()
+            
             media = self.vlc_instance.media_new(video_path)
             self.media_player.set_media(media)
             
-            # Embed VLC in Qt widget
+            # Embed VLC in Qt widget - must be done before play()
+            # Get the window ID and set it for video output
             if sys.platform.startswith('linux'):
-                self.media_player.set_xwindow(int(self.video_frame.winId()))
+                # On Linux, use X11 window ID
+                win_id = int(self.video_frame.winId())
+                self.media_player.set_xwindow(win_id)
             elif sys.platform == 'win32':
                 self.media_player.set_hwnd(int(self.video_frame.winId()))
             elif sys.platform == 'darwin':
                 self.media_player.set_nsobject(int(self.video_frame.winId()))
             
+            # Apply current volume before playing
+            self.media_player.audio_set_volume(self.volume_slider.value())
+            
+            # Start playback
             self.media_player.play()
             self.is_paused = False
             self.play_btn.setText("⏸")
             self.status_label.setText(f"正在播放: {video_path.split('/')[-1]}")
-            
-            # Apply current volume
-            self.media_player.audio_set_volume(self.volume_slider.value())
             
             self.playback_started.emit(video_path)
         except Exception as e:
