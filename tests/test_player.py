@@ -3,7 +3,7 @@ import unittest
 
 # Define constants here for testing since importing player requires Qt multimedia
 # These match the constants in src/ui/player.py
-PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 5.0]
 DEFAULT_FRAME_RATE = 30.0
 
 
@@ -20,8 +20,12 @@ class TestPlaybackSpeeds(unittest.TestCase):
     
     def test_playback_speeds_values(self):
         """Test expected playback speed values."""
-        expected = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+        expected = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 5.0]
         self.assertEqual(PLAYBACK_SPEEDS, expected)
+    
+    def test_playback_speeds_contains_5x(self):
+        """Test that playback speeds include 5.0 (5x speed)."""
+        self.assertIn(5.0, PLAYBACK_SPEEDS)
 
 
 class TestQtPlayerSpeedControl(unittest.TestCase):
@@ -45,8 +49,8 @@ class TestQtPlayerSpeedControl(unittest.TestCase):
         # Test minimum speed (0.25)
         self.assertEqual(PLAYBACK_SPEEDS.index(0.25), 0)
         
-        # Test maximum speed (2.0)
-        self.assertEqual(PLAYBACK_SPEEDS.index(2.0), 6)
+        # Test maximum speed (5.0)
+        self.assertEqual(PLAYBACK_SPEEDS.index(5.0), 7)
     
     def test_speed_increase_logic(self):
         """Test that speed increase moves to next available speed."""
@@ -68,8 +72,8 @@ class TestQtPlayerSpeedControl(unittest.TestCase):
         """Test that speed cannot increase beyond maximum."""
         max_index = len(PLAYBACK_SPEEDS) - 1
         # At maximum, should not be able to increase
-        self.assertEqual(max_index, 6)
-        self.assertEqual(PLAYBACK_SPEEDS[max_index], 2.0)
+        self.assertEqual(max_index, 7)
+        self.assertEqual(PLAYBACK_SPEEDS[max_index], 5.0)
     
     def test_speed_at_minimum(self):
         """Test that speed cannot decrease below minimum."""
