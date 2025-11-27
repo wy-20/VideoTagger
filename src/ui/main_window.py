@@ -326,11 +326,7 @@ class MainWindow(QMainWindow):
     def toggle_tag_on_current(self, tag: str):
         """Toggle a tag on the current video (add if not present, remove if present)."""
         if self.current_video:
-            current_tags = self.tag_manager.get_tags(self.current_video)
-            if tag in current_tags:
-                self.tag_manager.remove_tag(self.current_video, tag)
-            else:
-                self.tag_manager.add_tag(self.current_video, tag)
+            self.tag_manager.toggle_tag(self.current_video, tag)
             self.update_current_tags()
             self.update_playlist()
             self.update_tag_button_states()
@@ -352,8 +348,7 @@ class MainWindow(QMainWindow):
         )
         
         if reply == QMessageBox.StandardButton.Yes:
-            for tag in current_tags[:]:  # Copy list to avoid modification during iteration
-                self.tag_manager.remove_tag(self.current_video, tag)
+            self.tag_manager.clear_tags(self.current_video)
             self.update_current_tags()
             self.update_playlist()
             self.update_tag_button_states()
