@@ -14,6 +14,9 @@ on:
         required: false
         default: '1.0.0'
 
+permissions:
+  contents: write
+
 jobs:
   build-appimage:
     name: Build AppImage for Ubuntu 22.04
