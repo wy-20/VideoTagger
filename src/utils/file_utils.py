@@ -3,6 +3,8 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from src.core.video_scanner import VIDEO_EXTENSIONS
+
 
 def get_file_size(file_path: str) -> int:
     """
@@ -77,5 +79,6 @@ def is_video_file(file_path: str) -> bool:
     Returns:
         True if file is a supported video format
     """
-    video_extensions = {'mp4', 'avi', 'mkv', 'mov', 'webm', 'flv', 'wmv'}
-    return get_file_extension(file_path) in video_extensions
+    # Use VIDEO_EXTENSIONS from video_scanner (extensions include leading dot)
+    extension = Path(file_path).suffix.lower()
+    return extension in VIDEO_EXTENSIONS
