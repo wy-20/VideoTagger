@@ -8,7 +8,7 @@ from PyQt6.QtMultimediaWidgets import QVideoWidget
 DEFAULT_FRAME_RATE = 30.0
 
 # Available playback speeds
-PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 5.0]
 
 
 class QtPlayer:
@@ -150,3 +150,18 @@ class QtPlayer:
         frame_duration_ms = 1000 / self._frame_rate
         new_position = max(0, self.player.position() - int(frame_duration_ms))
         self.player.setPosition(new_position)
+    
+    @property
+    def frame_rate(self) -> float:
+        """Get current frame rate."""
+        return self._frame_rate
+    
+    def set_frame_rate(self, rate: float):
+        """
+        Set the frame rate for frame-by-frame navigation.
+        
+        Args:
+            rate: Frame rate in frames per second
+        """
+        if rate > 0:
+            self._frame_rate = rate

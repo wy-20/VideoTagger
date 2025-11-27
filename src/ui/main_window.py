@@ -3,13 +3,14 @@ from pathlib import Path
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QListWidget, QPushButton, QFileDialog, QLabel,
-    QSlider, QListWidgetItem, QSplitter, QComboBox, QMessageBox
+    QSlider, QListWidgetItem, QSplitter, QComboBox, QMessageBox,
+    QSpinBox
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QShortcut, QKeySequence
 from PyQt6.QtMultimediaWidgets import QVideoWidget
 
-from src.ui.player import QtPlayer, PLAYBACK_SPEEDS
+from src.ui.player import QtPlayer, PLAYBACK_SPEEDS, DEFAULT_FRAME_RATE
 from src.ui.settings_dialog import SettingsDialog
 from src.core.video_scanner import scan_videos
 from src.core.tag_manager import TagManager
@@ -99,6 +100,17 @@ class MainWindow(QMainWindow):
         self.speed_combo.setFixedWidth(70)
         self.speed_combo.setToolTip("播放速度 (+/-)")
         
+        # Frame rate control
+        self.frame_rate_label = QLabel("帧率:")
+        self.frame_rate_spinbox = QSpinBox()
+        self.frame_rate_spinbox.setMinimum(1)
+        self.frame_rate_spinbox.setMaximum(120)
+        self.frame_rate_spinbox.setValue(int(DEFAULT_FRAME_RATE))
+        self.frame_rate_spinbox.setSuffix(" fps")
+        self.frame_rate_spinbox.setToolTip("视频帧率 (用于逐帧导航)")
+        self.frame_rate_spinbox.setFixedWidth(80)
+        self.frame_rate_spinbox.valueChanged.connect(self.change_frame_rate)
+        
         self.volume = QSlider(Qt.Orientation.Horizontal)
         self.volume.setMaximum(100)
         self.volume.setValue(100)
@@ -111,6 +123,8 @@ class MainWindow(QMainWindow):
         controls.addWidget(self.progress, 1)
         controls.addWidget(self.time_label)
         controls.addWidget(self.speed_combo)
+        controls.addWidget(self.frame_rate_label)
+        controls.addWidget(self.frame_rate_spinbox)
         controls.addWidget(QLabel("🔊"))
         controls.addWidget(self.volume)
         
@@ -206,6 +220,15 @@ class MainWindow(QMainWindow):
         clear_tags_shortcut = QShortcut(QKeySequence("Ctrl+Shift+C"), self)
         clear_tags_shortcut.activated.connect(self.clear_all_tags)
         self.shortcuts.append(clear_tags_shortcut)
+        
+        # Video navigation shortcuts
+        prev_video_shortcut = QShortcut(QKeySequence("P"), self)
+        prev_video_shortcut.activated.connect(self.play_previous_video)
+        self.shortcuts.append(prev_video_shortcut)
+        
+        next_video_shortcut = QShortcut(QKeySequence("N"), self)
+        next_video_shortcut.activated.connect(self.play_next_video)
+        self.shortcuts.append(next_video_shortcut)
     
     def setup_timer(self):
         """Set up timer for progress updates."""
@@ -417,3 +440,46 @@ class MainWindow(QMainWindow):
             # Refresh shortcuts and buttons
             self.setup_shortcuts()
             self.update_tag_buttons()
+    
+    def change_frame_rate(self, value: int):
+        """Change the frame rate for frame-by-frame navigation."""
+        if self.player:
+            self.player.set_frame_rate(float(value))
+    
+    def play_previous_video(self):
+        """Play the previous video in the playlist."""
+        if not self.videos:
+            return
+        
+        current_row = -1
+        if self.current_video:
+            try:
+                current_row = self.videos.index(self.current_video)
+            except ValueError:
+                pass
+        
+        if current_row > 0:
+            new_row = current_row - 1
+            self.playlist.setCurrentRow(new_row)
+            item = self.playlist.item(new_row)
+            if item:
+                self.play_video(item)
+    
+    def play_next_video(self):
+        """Play the next video in the playlist."""
+        if not self.videos:
+            return
+        
+        current_row = -1
+        if self.current_video:
+            try:
+                current_row = self.videos.index(self.current_video)
+            except ValueError:
+                pass
+        
+        if current_row < len(self.videos) - 1:
+            new_row = current_row + 1
+            self.playlist.setCurrentRow(new_row)
+            item = self.playlist.item(new_row)
+            if item:
+                self.play_video(item)

@@ -8,8 +8,10 @@ A lightweight video tagging tool built with PyQt6 and QtMultimedia for Linux, su
 - **Video Scanning**: Recursively scan directories for video files (mp4, avi, mkv, mov, webm, flv, wmv)
 - **Playlist View**: Display all videos in a list with file names and assigned tags
 - **Video Playback**: Built-in player with play/pause, progress bar, and volume control
-- **Playback Speed Control**: Adjust playback speed from 0.25x to 2.0x with keyboard shortcuts or dropdown
+- **Playback Speed Control**: Adjust playback speed from 0.25x to 5.0x with keyboard shortcuts or dropdown
 - **Frame-by-Frame Navigation**: Step through video one frame at a time with keyboard shortcuts or buttons
+- **Frame Rate Control**: Adjust frame rate (1-120 fps) for precise frame-by-frame navigation
+- **Video Navigation**: Navigate between videos in the playlist with keyboard shortcuts (P/N)
 - **Tag Management**: Toggle tags on/off with keyboard shortcuts or button clicks
 - **Tag Toggle Mode**: First press adds tag, second press removes it - buttons show active state
 - **Clear All Tags**: One-click button to remove all tags from current video (with confirmation)
@@ -86,12 +88,16 @@ python main.py
 | . (period) | Next frame |
 | + or = | Increase playback speed |
 | - | Decrease playback speed |
+| P | Previous video |
+| N | Next video |
 | Ctrl+Shift+C | Clear all tags |
 
 ### Playback Controls
 
 - **Frame-by-frame navigation**: Use `,` and `.` keys or the ⏮️/⏭️ buttons to step through video one frame at a time
-- **Playback speed**: Adjust speed from 0.25x to 2.0x using the dropdown or +/- keys
+- **Playback speed**: Adjust speed from 0.25x to 5.0x using the dropdown or +/- keys
+- **Frame rate**: Adjust frame rate (1-120 fps) using the spinbox for precise frame-by-frame navigation
+- **Video navigation**: Use `P` and `N` keys to navigate to previous/next video in the playlist
 - **Tag toggle**: Press a tag shortcut to add the tag, press again to remove it
 - **Clear all tags**: Remove all tags from current video with confirmation
 
