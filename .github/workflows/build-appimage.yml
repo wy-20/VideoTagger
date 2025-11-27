@@ -134,7 +134,13 @@ jobs:
           
           for plugin in "${PLUGINS[@]}"; do
             if [ -f "${GSTREAMER_DIR}/${plugin}" ]; then
-              cp "${GSTREAMER_DIR}/${plugin}" "${TARGET_DIR}/" || true
+              if cp "${GSTREAMER_DIR}/${plugin}" "${TARGET_DIR}/"; then
+                echo "Copied: ${plugin}"
+              else
+                echo "Warning: Failed to copy ${plugin}"
+              fi
+            else
+              echo "Not found: ${plugin}"
             fi
           done
           

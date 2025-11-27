@@ -107,7 +107,6 @@ if [ -d "$GSTREAMER_DIR" ]; then
         "libgstvideorate.so"
         "libgstdeinterlace.so"
         "libgstx264.so"
-        "libgstx265.so"
         "libgstvpx.so"
         "libgstflv.so"
         "libgstasf.so"
@@ -132,7 +131,10 @@ echo "----------------------------------------"
 cd "${BUILD_DIR}"
 APPIMAGETOOL="appimagetool-x86_64.AppImage"
 if [ ! -f "$APPIMAGETOOL" ]; then
-    wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/${APPIMAGETOOL}"
+    if ! wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/${APPIMAGETOOL}"; then
+        echo "Error: Failed to download appimagetool"
+        exit 1
+    fi
     chmod +x "$APPIMAGETOOL"
 fi
 
