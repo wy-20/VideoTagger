@@ -23,6 +23,7 @@ class TagPanelWidget(QWidget):
         self.shortcuts: Dict[str, str] = {}
         self.current_tags: List[str] = []
         self.tag_buttons: Dict[str, QPushButton] = {}
+        self.current_tag_chips: List[QPushButton] = []
         self.init_ui()
     
     def init_ui(self):
@@ -41,13 +42,20 @@ class TagPanelWidget(QWidget):
         current_frame.setFrameShape(QFrame.Shape.StyledPanel)
         current_layout = QVBoxLayout(current_frame)
         
-        current_title = QLabel("当前视频标签")
+        current_title = QLabel("当前视频标签 (点击删除)")
         current_title.setStyleSheet("font-weight: bold;")
         current_layout.addWidget(current_title)
         
-        self.current_tags_label = QLabel("无")
-        self.current_tags_label.setWordWrap(True)
-        current_layout.addWidget(self.current_tags_label)
+        # Container for tag chips
+        self.tags_container = QWidget()
+        self.tags_layout = QHBoxLayout(self.tags_container)
+        self.tags_layout.setContentsMargins(0, 0, 0, 0)
+        self.tags_layout.setSpacing(5)
+        self.tags_layout.addStretch()
+        current_layout.addWidget(self.tags_container)
+        
+        self.no_tags_label = QLabel("无")
+        current_layout.addWidget(self.no_tags_label)
         
         layout.addWidget(current_frame)
         
@@ -129,13 +137,46 @@ class TagPanelWidget(QWidget):
         Args:
             tags: List of tags
         """
-        self.current_tags = tags
-        if tags:
-            # Create clickable tag display
-            tags_text = ", ".join(tags)
-            self.current_tags_label.setText(tags_text)
+        self.current_tags = tags.copy() if tags else []
+        self._update_tag_chips()
+    
+    def _update_tag_chips(self):
+        """Update the tag chip display."""
+        # Clear existing chips
+        for chip in self.current_tag_chips:
+            chip.deleteLater()
+        self.current_tag_chips.clear()
+        
+        # Remove stretch if present
+        while self.tags_layout.count() > 0:
+            item = self.tags_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        if self.current_tags:
+            self.no_tags_label.hide()
+            # Create new chips
+            for tag in self.current_tags:
+                chip = QPushButton(f"✕ {tag}")
+                chip.setToolTip(f"点击删除标签: {tag}")
+                chip.setStyleSheet(
+                    "QPushButton { background-color: #e0e0e0; border-radius: 3px; "
+                    "padding: 2px 5px; } QPushButton:hover { background-color: #ffcccc; }"
+                )
+                chip.clicked.connect(lambda checked, t=tag: self._on_tag_chip_clicked(t))
+                self.tags_layout.addWidget(chip)
+                self.current_tag_chips.append(chip)
+            self.tags_layout.addStretch()
         else:
-            self.current_tags_label.setText("无")
+            self.no_tags_label.show()
+    
+    def _on_tag_chip_clicked(self, tag: str):
+        """Handle tag chip click (remove tag).
+        
+        Args:
+            tag: Tag to remove
+        """
+        self.tag_removed.emit(tag)
     
     def add_tag(self, tag: str):
         """Add a tag to current display.
@@ -145,7 +186,7 @@ class TagPanelWidget(QWidget):
         """
         if tag not in self.current_tags:
             self.current_tags.append(tag)
-            self.set_current_tags(self.current_tags)
+            self._update_tag_chips()
     
     def remove_tag(self, tag: str):
         """Remove a tag from current display.
@@ -155,9 +196,9 @@ class TagPanelWidget(QWidget):
         """
         if tag in self.current_tags:
             self.current_tags.remove(tag)
-            self.set_current_tags(self.current_tags)
+            self._update_tag_chips()
     
     def clear_tags(self):
         """Clear current tags display."""
         self.current_tags = []
-        self.current_tags_label.setText("无")
+        self._update_tag_chips()

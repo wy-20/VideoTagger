@@ -62,6 +62,7 @@ class MainWindow(QMainWindow):
         # Right panel: Tag panel
         self.tag_panel = TagPanelWidget()
         self.tag_panel.tag_added.connect(self.add_tag_to_current)
+        self.tag_panel.tag_removed.connect(self.remove_tag_from_current)
         self.tag_panel.export_requested.connect(self.export_tags)
         self.tag_panel.settings_requested.connect(self.show_settings)
         self.tag_panel.setMaximumWidth(300)
@@ -167,6 +168,23 @@ class MainWindow(QMainWindow):
             self.update_status(f"已添加标签: {tag}")
         else:
             self.update_status(f"标签已存在: {tag}")
+    
+    def remove_tag_from_current(self, tag: str):
+        """Remove a tag from the current video.
+        
+        Args:
+            tag: Tag to remove
+        """
+        if not self.current_video:
+            self.update_status("请先选择视频")
+            return
+        
+        if self.tag_manager.remove_tag(self.current_video, tag):
+            self.update_current_tags()
+            self.update_playlist_tags()
+            self.update_status(f"已删除标签: {tag}")
+        else:
+            self.update_status(f"标签不存在: {tag}")
     
     def update_current_tags(self):
         """Update the tag display for current video."""
