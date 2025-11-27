@@ -1,0 +1,90 @@
+name: Build Executable
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-20.04
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            patchelf \
+            ccache \
+            libgl1-mesa-dev \
+            libglib2.0-0 \
+            libxkbcommon0 \
+            libdbus-1-3 \
+            libfontconfig1 \
+            libfreetype6 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-xfixes0 \
+            libxcb-xinerama0 \
+            libxcb-xkb1 \
+            libegl1 \
+            libopengl0 \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly \
+            gstreamer1.0-libav \
+            libgstreamer1.0-0 \
+            libgstreamer-plugins-base1.0-0
+      
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install nuitka ordered-set zstandard
+      
+      - name: Build with Nuitka
+        run: |
+          python -m nuitka \
+            --standalone \
+            --onefile \
+            --enable-plugin=pyqt6 \
+            --include-package=src \
+            --include-package-data=src \
+            --output-filename=VideoTagger \
+            --output-dir=dist \
+            --assume-yes-for-downloads \
+            main.py
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VideoTagger-linux-x64
+          path: dist/VideoTagger
+          retention-days: 30
+      
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/VideoTagger
+          generate_release_notes: true

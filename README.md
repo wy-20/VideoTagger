@@ -66,6 +66,46 @@ source venv/bin/activate
 python main.py
 ```
 
+## Building Executable
+
+The project supports building a standalone executable using Nuitka for Ubuntu 20.04 x64.
+
+### Prerequisites
+
+```bash
+# Install system dependencies (Ubuntu/Debian)
+sudo apt-get update
+sudo apt-get install -y patchelf ccache libgl1-mesa-dev
+
+# Install Nuitka
+pip install nuitka ordered-set zstandard
+```
+
+### Build Command
+
+```bash
+python -m nuitka \
+    --standalone \
+    --onefile \
+    --enable-plugin=pyqt6 \
+    --include-package=src \
+    --include-package-data=src \
+    --output-filename=VideoTagger \
+    --output-dir=dist \
+    main.py
+```
+
+The executable will be created at `dist/VideoTagger`.
+
+### Automated Builds
+
+GitHub Actions automatically builds the executable on:
+- Push to `main` branch
+- Pull requests to `main`
+- Tag pushes (creates a release with the executable)
+
+Download the latest build from the [Actions](../../actions) tab or [Releases](../../releases) page.
+
 ### Workflow
 
 1. Click "📁 选择文件夹" to select a folder containing videos
