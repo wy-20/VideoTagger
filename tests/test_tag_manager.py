@@ -104,6 +104,70 @@ class TestTagManager(unittest.TestCase):
         self.assertEqual(len(all_tags), 2)
         self.assertIn('/path/to/video1.mp4', all_tags)
         self.assertIn('/path/to/video2.mp4', all_tags)
+    
+    def test_toggle_tag_add(self):
+        """Test toggling a tag adds it when not present."""
+        video_path = '/path/to/video.mp4'
+        result = self.manager.toggle_tag(video_path, 'good')
+        
+        self.assertTrue(result)
+        self.assertEqual(self.manager.get_tags(video_path), ['good'])
+    
+    def test_toggle_tag_remove(self):
+        """Test toggling a tag removes it when present."""
+        video_path = '/path/to/video.mp4'
+        self.manager.add_tag(video_path, 'good')
+        result = self.manager.toggle_tag(video_path, 'good')
+        
+        self.assertFalse(result)
+        self.assertEqual(self.manager.get_tags(video_path), [])
+    
+    def test_toggle_tag_multiple(self):
+        """Test toggling tags multiple times."""
+        video_path = '/path/to/video.mp4'
+        
+        # First toggle adds the tag
+        self.manager.toggle_tag(video_path, 'good')
+        self.assertTrue(self.manager.has_tag(video_path, 'good'))
+        
+        # Second toggle removes the tag
+        self.manager.toggle_tag(video_path, 'good')
+        self.assertFalse(self.manager.has_tag(video_path, 'good'))
+        
+        # Third toggle adds it back
+        self.manager.toggle_tag(video_path, 'good')
+        self.assertTrue(self.manager.has_tag(video_path, 'good'))
+    
+    def test_clear_tags(self):
+        """Test clearing all tags from a video."""
+        video_path = '/path/to/video.mp4'
+        self.manager.add_tag(video_path, 'good')
+        self.manager.add_tag(video_path, 'favorite')
+        self.manager.add_tag(video_path, 'interesting')
+        
+        self.manager.clear_tags(video_path)
+        
+        self.assertEqual(self.manager.get_tags(video_path), [])
+        self.assertNotIn(video_path, self.manager.tags)
+    
+    def test_clear_tags_nonexistent(self):
+        """Test clearing tags from a video with no tags."""
+        video_path = '/path/to/video.mp4'
+        # Should not raise an error
+        self.manager.clear_tags(video_path)
+        self.assertEqual(self.manager.get_tags(video_path), [])
+    
+    def test_has_tag(self):
+        """Test checking if a video has a specific tag."""
+        video_path = '/path/to/video.mp4'
+        self.manager.add_tag(video_path, 'good')
+        
+        self.assertTrue(self.manager.has_tag(video_path, 'good'))
+        self.assertFalse(self.manager.has_tag(video_path, 'bad'))
+    
+    def test_has_tag_nonexistent_video(self):
+        """Test has_tag returns False for nonexistent video."""
+        self.assertFalse(self.manager.has_tag('/nonexistent/video.mp4', 'good'))
 
 
 if __name__ == '__main__':

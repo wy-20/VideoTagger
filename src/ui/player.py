@@ -4,6 +4,13 @@ from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PyQt6.QtMultimediaWidgets import QVideoWidget
 
 
+# Default frame rate assumption when video metadata is unavailable
+DEFAULT_FRAME_RATE = 30.0
+
+# Available playback speeds
+PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+
+
 class QtPlayer:
     """QtMultimedia player wrapper class for video playback."""
     
@@ -20,6 +27,8 @@ class QtPlayer:
         self.player.setVideoOutput(video_widget)
         
         self._duration = 0
+        self._playback_rate = 1.0
+        self._frame_rate = DEFAULT_FRAME_RATE
         
         # Connect duration changed signal
         self.player.durationChanged.connect(self._on_duration_changed)
@@ -86,3 +95,58 @@ class QtPlayer:
     def is_paused(self) -> bool:
         """Check if playback is paused."""
         return self.player.playbackState() != QMediaPlayer.PlaybackState.PlayingState
+    
+    @property
+    def playback_rate(self) -> float:
+        """Get current playback rate."""
+        return self._playback_rate
+    
+    def set_playback_rate(self, rate: float):
+        """
+        Set the playback speed.
+        
+        Args:
+            rate: Playback rate (e.g., 0.5, 1.0, 2.0)
+        """
+        self._playback_rate = rate
+        self.player.setPlaybackRate(rate)
+    
+    def increase_speed(self):
+        """Increase playback speed to next available speed level."""
+        current_index = self._get_speed_index()
+        if current_index < len(PLAYBACK_SPEEDS) - 1:
+            self.set_playback_rate(PLAYBACK_SPEEDS[current_index + 1])
+    
+    def decrease_speed(self):
+        """Decrease playback speed to previous available speed level."""
+        current_index = self._get_speed_index()
+        if current_index > 0:
+            self.set_playback_rate(PLAYBACK_SPEEDS[current_index - 1])
+    
+    def _get_speed_index(self) -> int:
+        """Get the index of current speed in PLAYBACK_SPEEDS list."""
+        try:
+            return PLAYBACK_SPEEDS.index(self._playback_rate)
+        except ValueError:
+            # Find closest speed
+            for i, speed in enumerate(PLAYBACK_SPEEDS):
+                if speed >= self._playback_rate:
+                    return i
+            return len(PLAYBACK_SPEEDS) - 1
+    
+    def step_forward(self):
+        """Step forward one frame."""
+        if self.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
+            self.player.pause()
+        frame_duration_ms = 1000 / self._frame_rate
+        new_position = self.player.position() + int(frame_duration_ms)
+        if new_position <= self._duration * 1000:
+            self.player.setPosition(new_position)
+    
+    def step_backward(self):
+        """Step backward one frame."""
+        if self.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
+            self.player.pause()
+        frame_duration_ms = 1000 / self._frame_rate
+        new_position = max(0, self.player.position() - int(frame_duration_ms))
+        self.player.setPosition(new_position)
