@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Video Tagger
+GenericName=Video Tagging Tool
+Comment=A lightweight video tagging tool with customizable keyboard shortcuts
+Exec=VideoTagger
+Icon=VideoTagger
+Terminal=false
+Categories=AudioVideo;Video;Utility;
+Keywords=video;tagger;tag;media;organize;
+StartupNotify=true
+StartupWMClass=VideoTagger

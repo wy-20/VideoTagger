@@ -1,0 +1,27 @@
+#!/bin/bash
+# AppRun script for VideoTagger AppImage
+# This script sets up the environment and launches the application
+
+APPDIR="$(dirname "$(readlink -f "$0")")"
+
+# Set up library paths
+export LD_LIBRARY_PATH="${APPDIR}/usr/lib:${APPDIR}/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}"
+
+# Set up Qt plugin path
+export QT_PLUGIN_PATH="${APPDIR}/usr/lib/python3/dist-packages/PyQt6/Qt6/plugins:${QT_PLUGIN_PATH}"
+export QT_QPA_PLATFORM_PLUGIN_PATH="${APPDIR}/usr/lib/python3/dist-packages/PyQt6/Qt6/plugins/platforms"
+
+# Set up GStreamer paths for video playback
+export GST_PLUGIN_PATH="${APPDIR}/usr/lib/x86_64-linux-gnu/gstreamer-1.0:${GST_PLUGIN_PATH}"
+export GST_PLUGIN_SYSTEM_PATH="${APPDIR}/usr/lib/x86_64-linux-gnu/gstreamer-1.0:${GST_PLUGIN_SYSTEM_PATH}"
+export GST_PLUGIN_SCANNER="${APPDIR}/usr/libexec/gstreamer-1.0/gst-plugin-scanner"
+
+# Set XDG paths for user data
+export XDG_DATA_DIRS="${APPDIR}/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+
+# Set up Python path for the bundled application
+export PYTHONHOME="${APPDIR}/usr"
+export PYTHONPATH="${APPDIR}/usr/lib/python3/dist-packages:${PYTHONPATH}"
+
+# Launch the application
+exec "${APPDIR}/usr/bin/VideoTagger" "$@"

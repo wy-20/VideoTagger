@@ -44,3 +44,7 @@ data/tags.json
 # OS
 .DS_Store
 Thumbs.db
+
+# AppImage build artifacts
+*.AppImage
+appimagetool-*.AppImage
