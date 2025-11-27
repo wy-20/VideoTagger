@@ -25,7 +25,8 @@ pip install --upgrade pyinstaller
 
 # Clean old build files
 echo "🧹 Cleaning old builds..."
-rm -rf build/ dist/ 2>/dev/null || true
+[ -d build ] && rm -rf build/
+[ -d dist ] && rm -rf dist/
 
 # Execute packaging using spec file
 echo "🔨 Starting packaging..."
