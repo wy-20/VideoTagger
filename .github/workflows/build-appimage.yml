@@ -1,0 +1,178 @@
+name: Build AppImage
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: false
+        default: '1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-appimage:
+    name: Build AppImage for Ubuntu 22.04
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb-cursor0 \
+            libxkbcommon0 \
+            libxkbcommon-x11-0 \
+            libegl1 \
+            libgl1 \
+            libglib2.0-0 \
+            libdbus-1-3 \
+            libpulse0 \
+            libasound2 \
+            libfuse2 \
+            librsvg2-bin \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly \
+            gstreamer1.0-libav \
+            gstreamer1.0-tools \
+            gstreamer1.0-alsa \
+            gstreamer1.0-pulseaudio \
+            libgstreamer1.0-0 \
+            libgstreamer-plugins-base1.0-0
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          else
+            echo "version=dev-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --clean --noconfirm packaging/appimage/VideoTagger.spec
+
+      - name: Create AppDir structure
+        run: |
+          mkdir -p build/AppDir/usr/bin
+          mkdir -p build/AppDir/usr/lib/x86_64-linux-gnu/gstreamer-1.0
+          mkdir -p build/AppDir/usr/libexec/gstreamer-1.0
+          mkdir -p build/AppDir/usr/share/applications
+          mkdir -p build/AppDir/usr/share/icons/hicolor/scalable/apps
+          mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
+          
+          # Copy PyInstaller output
+          cp -r dist/VideoTagger/* build/AppDir/usr/bin/
+          
+          # Copy desktop file and icon
+          cp packaging/appimage/VideoTagger.desktop build/AppDir/
+          cp packaging/appimage/VideoTagger.desktop build/AppDir/usr/share/applications/
+          cp packaging/appimage/VideoTagger.svg build/AppDir/
+          cp packaging/appimage/VideoTagger.svg build/AppDir/.DirIcon
+          cp packaging/appimage/VideoTagger.svg build/AppDir/usr/share/icons/hicolor/scalable/apps/
+          
+          # Create PNG icon
+          rsvg-convert -w 256 -h 256 packaging/appimage/VideoTagger.svg > build/AppDir/usr/share/icons/hicolor/256x256/apps/VideoTagger.png
+          
+          # Copy AppRun script
+          cp packaging/appimage/AppRun build/AppDir/
+          chmod +x build/AppDir/AppRun
+
+      - name: Bundle GStreamer plugins
+        run: |
+          GSTREAMER_DIR="/usr/lib/x86_64-linux-gnu/gstreamer-1.0"
+          TARGET_DIR="build/AppDir/usr/lib/x86_64-linux-gnu/gstreamer-1.0"
+          
+          # Copy essential GStreamer plugins
+          PLUGINS=(
+            libgstcoreelements.so
+            libgstplayback.so
+            libgstvideoconvertscale.so
+            libgstautodetect.so
+            libgstvideoparsersbad.so
+            libgstlibav.so
+            libgstmatroska.so
+            libgstisomp4.so
+            libgstavi.so
+            libgstaudioparsers.so
+            libgstaudioconvert.so
+            libgstaudioresample.so
+            libgstvolume.so
+            libgstalsa.so
+            libgstpulseaudio.so
+            libgstvideorate.so
+            libgstdeinterlace.so
+            libgstx264.so
+            libgstvpx.so
+            libgstflv.so
+            libgstasf.so
+          )
+          
+          for plugin in "${PLUGINS[@]}"; do
+            if [ -f "${GSTREAMER_DIR}/${plugin}" ]; then
+              if cp "${GSTREAMER_DIR}/${plugin}" "${TARGET_DIR}/"; then
+                echo "Copied: ${plugin}"
+              else
+                echo "Warning: Failed to copy ${plugin}"
+              fi
+            else
+              echo "Not found: ${plugin}"
+            fi
+          done
+          
+          # Copy GStreamer plugin scanner
+          if [ -f "/usr/libexec/gstreamer-1.0/gst-plugin-scanner" ]; then
+            cp "/usr/libexec/gstreamer-1.0/gst-plugin-scanner" build/AppDir/usr/libexec/gstreamer-1.0/
+          fi
+
+      - name: Download appimagetool
+        run: |
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+
+      - name: Build AppImage
+        run: |
+          ARCH=x86_64 ./appimagetool-x86_64.AppImage build/AppDir VideoTagger-${{ steps.version.outputs.version }}-x86_64.AppImage
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VideoTagger-${{ steps.version.outputs.version }}-x86_64.AppImage
+          path: VideoTagger-${{ steps.version.outputs.version }}-x86_64.AppImage
+          retention-days: 30
+
+      - name: Create Release (on tag push)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: VideoTagger-${{ steps.version.outputs.version }}-x86_64.AppImage
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

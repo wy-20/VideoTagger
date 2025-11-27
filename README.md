@@ -122,6 +122,16 @@ video-tagger/
 │   │   └── shortcut_manager.py # Shortcut management
 │   └── utils/
 │       └── file_utils.py   # File utilities
+├── packaging/
+│   └── appimage/           # AppImage packaging files
+│       ├── AppRun              # AppImage entry script
+│       ├── VideoTagger.desktop # Desktop entry file
+│       ├── VideoTagger.svg     # Application icon
+│       ├── VideoTagger.spec    # PyInstaller spec file
+│       └── build_appimage.sh   # Build script
+├── .github/
+│   └── workflows/
+│       └── build-appimage.yml  # CI/CD workflow
 └── tests/
     ├── test_video_scanner.py
     ├── test_tag_manager.py
@@ -145,6 +155,52 @@ Tags are exported as JSON in the following format:
 ```bash
 python -m pytest tests/
 ```
+
+## Building AppImage (Ubuntu 22.04 x64)
+
+You can build a standalone AppImage that includes all dependencies. This is useful for distributing the application without requiring users to install Python or dependencies.
+
+### Automated Build (GitHub Actions)
+
+The repository includes a GitHub Actions workflow that automatically builds AppImage packages:
+
+- **On push to main**: Builds a development version
+- **On tag push (v\*)**: Creates a release with the AppImage attached
+- **Manual trigger**: Run the workflow manually with a custom version number
+
+### Manual Build
+
+To build the AppImage locally on Ubuntu 22.04:
+
+```bash
+# Install system dependencies
+sudo apt update
+sudo apt install -y \
+    python3 python3-pip python3-venv \
+    libfuse2 librsvg2-bin wget \
+    gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
+    gstreamer1.0-libav gstreamer1.0-tools \
+    gstreamer1.0-alsa gstreamer1.0-pulseaudio
+
+# Run the build script
+chmod +x packaging/appimage/build_appimage.sh
+APP_VERSION=1.0.0 ./packaging/appimage/build_appimage.sh
+```
+
+The AppImage will be created at `build/VideoTagger-{version}-x86_64.AppImage`.
+
+### Running the AppImage
+
+```bash
+# Make it executable (if needed)
+chmod +x VideoTagger-1.0.0-x86_64.AppImage
+
+# Run the application
+./VideoTagger-1.0.0-x86_64.AppImage
+```
+
+**Note**: The AppImage bundles GStreamer plugins for common video formats. For best compatibility, the host system should have `libfuse2` installed.
 
 ## Troubleshooting
 
