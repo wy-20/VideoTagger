@@ -90,6 +90,7 @@ python -m nuitka \
     --enable-plugin=pyqt6 \
     --include-package=src \
     --include-package-data=src \
+    --include-qt-plugins=platforms,multimedia,styles,iconengines,imageformats \
     --output-filename=VideoTagger \
     --output-dir=dist \
     main.py
